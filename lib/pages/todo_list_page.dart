@@ -58,7 +58,12 @@ class _TodoListPageState extends State<TodoListPage> {
                   ),
                   Text(
                     formattedDate,
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 20, 
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF262626),
+                      
+                    ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.arrow_forward_ios),
@@ -73,14 +78,34 @@ class _TodoListPageState extends State<TodoListPage> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: TextField(
                 controller: _controller,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: '할 일을 입력해주세요.',
+                  hintStyle: const TextStyle(
+                    fontWeight: FontWeight.w400, // ⬅️ 텍스트 굵기
+                    fontSize: 15, // ⬅️ 텍스트 크기
+                    color: Color(0xFF737373),  // ⬅️ 텍스트 색상
+                  ),
+
+                  // 기본(비활성) border
                   enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFF595959)), // 포커스 전 border 색
+                    borderRadius: BorderRadius.circular(8), // ⬅️ 둥근 모서리
+                    borderSide: const BorderSide(
+                      color: Color(0xFF595959),
+                      width: 1.0, // ⬅️ 선 굵기
+                    ),
                   ),
+
+                  // 포커스됐을 때 border
                   focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFF262626)), // 포커스 됐을 때 border 색
+                    borderRadius: BorderRadius.circular(12),  // ⬅️ 둥근 모서리 유지
+                    borderSide: const BorderSide(
+                      color: Color(0xFF595959),
+                      width: 1.5, // ⬅️ 선 굵기
+                    ),
                   ),
+
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14), // 텍스트 패딩 조절
+
                 ),
               ),
             ),
@@ -91,7 +116,7 @@ class _TodoListPageState extends State<TodoListPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Color(0xFFECECEC), // 버튼 배경색
                 foregroundColor: Color(0xFF595959), // 글자 색
-                padding: const EdgeInsets.symmetric(horizontal: 132, vertical: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 132, vertical: 14), // 버튼 패딩
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
