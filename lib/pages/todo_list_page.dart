@@ -58,6 +58,53 @@ class _TodoListPageState extends State<TodoListPage> {
     });
   }
 
+  // ✅ 삭제 기능
+  void _deleteTodo(int index) {
+    final key = DateFormat('yyyy-MM-dd').format(selectedDate);
+    setState(() {
+      _todosForSelectedDate.removeAt(index); // ✅ 해당 날짜의 목록에서 삭제
+    });
+  }
+
+  // ✅ 수정 기능
+  void _editTodo(int index) {
+    final key = DateFormat('yyyy-MM-dd').format(selectedDate);
+    final currentTodo = _todosForSelectedDate[index];
+    final TextEditingController editController = TextEditingController(text: currentTodo.text);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('할 일 수정'),
+          content: TextField(
+            controller: editController,
+            decoration: const InputDecoration(
+              hintText: '수정할 내용을 입력하세요',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // 닫기
+              },
+              child: const Text('취소'),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  currentTodo.text = editController.text.trim();
+                });
+                Navigator.of(context).pop(); // 닫기
+              },
+              child: const Text('저장'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final formattedDate = DateFormat('yyyy년 M월 d일').format(selectedDate);
@@ -174,7 +221,51 @@ class _TodoListPageState extends State<TodoListPage> {
                         decoration: todo.isDone ? TextDecoration.lineThrough : null,
                       ),
                     ),
-                    trailing: const Icon(Icons.more_vert),
+                    trailing: PopupMenuButton<String>(
+                      color: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8), // ✅ 둥근 정도
+                      ),
+                      onSelected: (value) {
+                        if (value == 'edit') {
+                          _editTodo(index); // ✅ 수정 기능
+                        } else if (value == 'delete') {
+                          _deleteTodo(index); // ✅ 삭제 기능
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Center(
+                            child: Text(
+                              '수정',
+                              style: TextStyle(
+                                color: Color(0xFF262626), // ✅ 글자 색
+                                fontSize: 15,             // ✅ 글씨 크기
+                                fontWeight: FontWeight.w400, // ✅ 굵기
+                              ),
+                            ),
+                          ),
+                        ),
+                        // ✅ 구분선
+                        const PopupMenuDivider(
+                          height: 1,
+                        ),
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Center(
+                            child: Text(
+                              '삭제',
+                              style: TextStyle(
+                                color: Color(0xFF262626),
+                                fontSize: 15,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   );
                 },
               ),
