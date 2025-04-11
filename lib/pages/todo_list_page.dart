@@ -76,7 +76,18 @@ class _TodoListPageState extends State<TodoListPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('할 일 수정'),
+          backgroundColor: Colors.white, // ✅ 배경 흰색
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          title: const Text(
+              '할 일 수정',
+            style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF262626),
+            ),
+          ),
           content: TextField(
             controller: editController,
             decoration: const InputDecoration(
@@ -88,7 +99,14 @@ class _TodoListPageState extends State<TodoListPage> {
               onPressed: () {
                 Navigator.of(context).pop(); // 닫기
               },
-              child: const Text('취소'),
+              child: const Text(
+                  '취소',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF262626),
+                ),
+              ),
             ),
             TextButton(
               onPressed: () {
@@ -97,7 +115,14 @@ class _TodoListPageState extends State<TodoListPage> {
                 });
                 Navigator.of(context).pop(); // 닫기
               },
-              child: const Text('저장'),
+              child: const Text(
+                  '저장',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF262626),
+                ),
+              ),
             ),
           ],
         );
@@ -218,6 +243,9 @@ class _TodoListPageState extends State<TodoListPage> {
                     title: Text(
                       todo.text,
                       style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w400,
+                        color: const Color(0xFF262626),
                         decoration: todo.isDone ? TextDecoration.lineThrough : null,
                       ),
                     ),
@@ -241,7 +269,7 @@ class _TodoListPageState extends State<TodoListPage> {
                               '수정',
                               style: TextStyle(
                                 color: Color(0xFF262626), // ✅ 글자 색
-                                fontSize: 15,             // ✅ 글씨 크기
+                                fontSize: 14,             // ✅ 글씨 크기
                                 fontWeight: FontWeight.w400, // ✅ 굵기
                               ),
                             ),
@@ -258,7 +286,7 @@ class _TodoListPageState extends State<TodoListPage> {
                               '삭제',
                               style: TextStyle(
                                 color: Color(0xFF262626),
-                                fontSize: 15,
+                                fontSize: 14,
                                 fontWeight: FontWeight.w400,
                               ),
                             ),
