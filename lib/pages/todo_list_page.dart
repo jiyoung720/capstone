@@ -1,6 +1,79 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/todo.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
+// 실제 기기에서는 'http://192.168.x.x:8080' 로 변경 필요
+const String baseUrl = 'http://192.168.0.7:8080';
+
+// ✅ 서버에 할 일 추가 요청 함수
+Future<bool> postTodo(String contents, String date) async {
+  final url = Uri.parse('$baseUrl/todolist');
+  final response = await http.post(
+    url,
+    headers: {'Content-Type': 'application/json; charset=utf-8'},
+    body: utf8.encode(jsonEncode({
+      'contents': contents,
+      'isCheck': false,
+      'doDate': date,
+    })),
+  );
+
+  return response.statusCode == 200 || response.statusCode == 201;
+}
+
+// ✅ API - 날짜별 할 일 조회
+Future<List<Todo>> fetchTodosByDate(String date) async {
+  final url = Uri.parse('$baseUrl/todolist/date/$date');
+  final response = await http.get(url);
+
+  if (response.statusCode == 200) {
+    final String decoded = utf8.decode(response.bodyBytes);
+    final List jsonList = jsonDecode(decoded);
+    return jsonList.map((json) => Todo.fromJson(json)).toList();
+  } else {
+    throw Exception('불러오기 실패: ${response.body}');
+  }
+}
+
+// ✅ 체크박스 상태 업데이트 API
+Future<bool> updateCheckBox(int id, bool isChecked) async {
+  final url = Uri.parse('$baseUrl/todolist/checkBox');
+  final response = await http.post(
+    url,
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({
+      'id': id,
+      'isCheck': isChecked,
+    }),
+  );
+  return response.statusCode == 200;
+}
+
+// ✅ 삭제 API 호출 함수
+Future<bool> deleteTodoById(int id) async {
+  final url = Uri.parse('$baseUrl/todolist/$id');
+  final response = await http.delete(url);
+
+  return response.statusCode == 200 || response.statusCode == 204;
+}
+
+// ✅ 수정 API
+Future<bool> updateTodo(int id, String contents, String date) async {
+  final url = Uri.parse('$baseUrl/todolist/update');
+  final response = await http.post(
+    url,
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({
+      'id': id,
+      'contents': contents,
+      'date': date, // yyyy-MM-dd
+    }),
+  );
+
+  return response.statusCode == 200;
+}
 
 class TodoListPage extends StatefulWidget {
   const TodoListPage({super.key});
@@ -22,26 +95,88 @@ class _TodoListPageState extends State<TodoListPage> {
     return _todosByDate[key] ?? [];
   }
 
-  // ✅ 현재 날짜에 할 일 추가
-  void _addTodo() {
-    final text = _controller.text.trim();
-    if (text.isNotEmpty) {
-      final key = DateFormat('yyyy-MM-dd').format(selectedDate);
-      setState(() {
-        _todosByDate[key] = [..._todosForSelectedDate, Todo(text: text)];
-        _sortTodos(key);
-        _controller.clear();
+  @override
+  void initState() {
+    super.initState();
+    _loadTodosForSelectedDate(); // 앱 시작 시 오늘 날짜 데이터 불러오기
+  }
+
+  void _loadTodosForSelectedDate() async {
+    final key = DateFormat('yyyy-MM-dd').format(selectedDate);
+
+    try {
+      final todos = await fetchTodosByDate(key);
+
+      // ✅ 정렬 추가!
+      todos.sort((a, b) {
+        if (a.isDone == b.isDone) return 0;
+        return a.isDone ? 1 : -1;
       });
+
+      setState(() {
+        _todosByDate[key] = todos;
+      });
+    } catch (e) {
+      print('❌ 조회 실패: $e');
     }
   }
-  // ✅ 체크 완료 시 해당 날짜 리스트에서 토글
-  void _toggleTodo(int index) {
-    final key = DateFormat('yyyy-MM-dd').format(selectedDate);
-    setState(() {
-      _todosForSelectedDate[index].isDone = !_todosForSelectedDate[index].isDone;
-      _sortTodos(key);
-    });
+
+  // ✅ 현재 날짜에 할 일 추가
+  void _addTodo() async {
+    final text = _controller.text.trim();
+    final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
+
+    if (text.isNotEmpty) {
+      bool success = await postTodo(text, dateStr);
+
+      if (success) {
+        _controller.clear();
+
+        try {
+          final todos = await fetchTodosByDate(dateStr);
+
+          // ✅ 정렬 추가!
+          todos.sort((a, b) {
+            if (a.isDone == b.isDone) return 0;
+            return a.isDone ? 1 : -1; // 체크된 항목은 아래로
+          });
+
+          setState(() {
+            _todosByDate[dateStr] = todos;
+          });
+        } catch (e) {
+          print("❌ 목록 재조회 실패: $e");
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('서버에 할 일 저장 실패')),
+        );
+      }
+    }
   }
+
+  // ✅ 체크 완료 시 해당 날짜 리스트에서 토글
+  void _toggleTodo(int index) async {
+    final key = DateFormat('yyyy-MM-dd').format(selectedDate);
+    final todo = _todosForSelectedDate[index];
+
+    if (todo.id == null) {
+      print("❌ id가 없어서 체크 업데이트 불가");
+      return;
+    }
+
+    final success = await updateCheckBox(todo.id!, !todo.isDone); // ✅ 서버 요청
+
+    if (success) {
+      setState(() {
+        todo.isDone = !todo.isDone;
+        _sortTodos(key);
+      });
+    } else {
+      print("❌ 체크 상태 업데이트 실패");
+    }
+  }
+
   // ✅ 해당 날짜 리스트만 정렬
   void _sortTodos(String key) {
     final todos = _todosByDate[key];
@@ -52,18 +187,42 @@ class _TodoListPageState extends State<TodoListPage> {
     });
   }
 
-  void _changeDate(int offset) {
+  void _changeDate(int offset) async {
     setState(() {
       selectedDate = selectedDate.add(Duration(days: offset));
     });
+
+    final key = DateFormat('yyyy-MM-dd').format(selectedDate);
+
+    try {
+      final todos = await fetchTodosByDate(key);
+      setState(() {
+        _todosByDate[key] = todos;
+      });
+    } catch (e) {
+      print('❌ 날짜 변경 시 조회 실패: $e');
+    }
   }
 
   // ✅ 삭제 기능
-  void _deleteTodo(int index) {
+  void _deleteTodo(int index) async {
     final key = DateFormat('yyyy-MM-dd').format(selectedDate);
-    setState(() {
-      _todosForSelectedDate.removeAt(index); // ✅ 해당 날짜의 목록에서 삭제
-    });
+    final todo = _todosForSelectedDate[index];
+
+    if (todo.id == null) {
+      print("❌ id가 없어서 삭제 불가");
+      return;
+    }
+
+    final success = await deleteTodoById(todo.id!); // ✅ API 호출
+
+    if (success) {
+      setState(() {
+        _todosForSelectedDate.removeAt(index); // UI에서 제거
+      });
+    } else {
+      print("❌ 삭제 실패");
+    }
   }
 
   // ✅ 수정 기능
@@ -76,53 +235,40 @@ class _TodoListPageState extends State<TodoListPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: Colors.white, // ✅ 배경 흰색
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           title: const Text(
-              '할 일 수정',
-            style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF262626),
-            ),
+            '할 일 수정',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Color(0xFF262626)),
           ),
           content: TextField(
             controller: editController,
-            decoration: const InputDecoration(
-              hintText: '수정할 내용을 입력하세요',
-            ),
+            decoration: const InputDecoration(hintText: '수정할 내용을 입력하세요'),
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // 닫기
-              },
-              child: const Text(
-                  '취소',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF262626),
-                ),
-              ),
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('취소', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF262626))),
             ),
             TextButton(
-              onPressed: () {
-                setState(() {
-                  currentTodo.text = editController.text.trim();
-                });
-                Navigator.of(context).pop(); // 닫기
+              onPressed: () async {
+                final newText = editController.text.trim();
+                final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
+
+                if (currentTodo.id != null && newText.isNotEmpty) {
+                  final success = await updateTodo(currentTodo.id!, newText, dateStr); // ✅ API 호출
+
+                  if (success) {
+                    setState(() {
+                      currentTodo.text = newText;
+                    });
+                    Navigator.of(context).pop();
+                  } else {
+                    print('❌ 수정 실패');
+                  }
+                }
               },
-              child: const Text(
-                  '저장',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF262626),
-                ),
-              ),
+              child: const Text('저장', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF262626))),
             ),
           ],
         );
