@@ -125,6 +125,13 @@ class _TodoListPageState extends State<TodoListPage> {
 
     try {
       final todos = await fetchTodosByDate(key);
+
+      // ✅ 정렬 추가 (체크된 항목을 아래로)
+      todos.sort((a, b) {
+        if (a.isDone == b.isDone) return 0;
+        return a.isDone ? 1 : -1;
+      });
+
       setState(() {
         _todosByDate[key] = todos;
       });
