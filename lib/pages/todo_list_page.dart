@@ -1,79 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/todo.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-
-// 실제 기기에서는 'http://192.168.x.x:8080' 로 변경 필요
-const String baseUrl = 'http://192.168.0.7:8080';
-
-// ✅ 서버에 할 일 추가 요청 함수
-Future<bool> postTodo(String contents, String date) async {
-  final url = Uri.parse('$baseUrl/todolist');
-  final response = await http.post(
-    url,
-    headers: {'Content-Type': 'application/json; charset=utf-8'},
-    body: utf8.encode(jsonEncode({
-      'contents': contents,
-      'isCheck': false,
-      'doDate': date,
-    })),
-  );
-
-  return response.statusCode == 200 || response.statusCode == 201;
-}
-
-// ✅ API - 날짜별 할 일 조회
-Future<List<Todo>> fetchTodosByDate(String date) async {
-  final url = Uri.parse('$baseUrl/todolist/date/$date');
-  final response = await http.get(url);
-
-  if (response.statusCode == 200) {
-    final String decoded = utf8.decode(response.bodyBytes);
-    final List jsonList = jsonDecode(decoded);
-    return jsonList.map((json) => Todo.fromJson(json)).toList();
-  } else {
-    throw Exception('불러오기 실패: ${response.body}');
-  }
-}
-
-// ✅ 체크박스 상태 업데이트 API
-Future<bool> updateCheckBox(int id, bool isChecked) async {
-  final url = Uri.parse('$baseUrl/todolist/checkBox');
-  final response = await http.post(
-    url,
-    headers: {'Content-Type': 'application/json'},
-    body: jsonEncode({
-      'id': id,
-      'isCheck': isChecked,
-    }),
-  );
-  return response.statusCode == 200;
-}
-
-// ✅ 삭제 API 호출 함수
-Future<bool> deleteTodoById(int id) async {
-  final url = Uri.parse('$baseUrl/todolist/$id');
-  final response = await http.delete(url);
-
-  return response.statusCode == 200 || response.statusCode == 204;
-}
-
-// ✅ 수정 API
-Future<bool> updateTodo(int id, String contents, String date) async {
-  final url = Uri.parse('$baseUrl/todolist/update');
-  final response = await http.post(
-    url,
-    headers: {'Content-Type': 'application/json'},
-    body: jsonEncode({
-      'id': id,
-      'contents': contents,
-      'date': date, // yyyy-MM-dd
-    }),
-  );
-
-  return response.statusCode == 200;
-}
+import '../api/todo_api.dart';
+import '../widgets/todo_tile.dart';
 
 class TodoListPage extends StatefulWidget {
   const TodoListPage({super.key});
@@ -107,7 +36,7 @@ class _TodoListPageState extends State<TodoListPage> {
     try {
       final todos = await fetchTodosByDate(key);
 
-      // ✅ 정렬 추가!
+      // ✅ 정렬 추가
       todos.sort((a, b) {
         if (a.isDone == b.isDone) return 0;
         return a.isDone ? 1 : -1;
@@ -227,7 +156,6 @@ class _TodoListPageState extends State<TodoListPage> {
 
   // ✅ 수정 기능
   void _editTodo(int index) {
-    final key = DateFormat('yyyy-MM-dd').format(selectedDate);
     final currentTodo = _todosForSelectedDate[index];
     final TextEditingController editController = TextEditingController(text: currentTodo.text);
 
@@ -237,10 +165,7 @@ class _TodoListPageState extends State<TodoListPage> {
         return AlertDialog(
           backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          title: const Text(
-            '할 일 수정',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Color(0xFF262626)),
-          ),
+          title: const Text('할 일 수정'),
           content: TextField(
             controller: editController,
             decoration: const InputDecoration(hintText: '수정할 내용을 입력하세요'),
@@ -301,7 +226,6 @@ class _TodoListPageState extends State<TodoListPage> {
                       fontSize: 20, 
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF262626),
-                      
                     ),
                   ),
                   IconButton(
@@ -380,66 +304,12 @@ class _TodoListPageState extends State<TodoListPage> {
                 itemCount: _todosForSelectedDate.length,
                 itemBuilder: (context, index) {
                   final todo = _todosForSelectedDate[index];
-                  return ListTile(
-                    leading: Checkbox(
-                      value: todo.isDone,
-                      onChanged: (_) => _toggleTodo(index),
-                      activeColor: Color(0xFF2AB514),
-                    ),
-                    title: Text(
-                      todo.text,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w400,
-                        color: const Color(0xFF262626),
-                        decoration: todo.isDone ? TextDecoration.lineThrough : null,
-                      ),
-                    ),
-                    trailing: PopupMenuButton<String>(
-                      color: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8), // ✅ 둥근 정도
-                      ),
-                      onSelected: (value) {
-                        if (value == 'edit') {
-                          _editTodo(index); // ✅ 수정 기능
-                        } else if (value == 'delete') {
-                          _deleteTodo(index); // ✅ 삭제 기능
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(
-                          value: 'edit',
-                          child: Center(
-                            child: Text(
-                              '수정',
-                              style: TextStyle(
-                                color: Color(0xFF262626), // ✅ 글자 색
-                                fontSize: 14,             // ✅ 글씨 크기
-                                fontWeight: FontWeight.w400, // ✅ 굵기
-                              ),
-                            ),
-                          ),
-                        ),
-                        // ✅ 구분선
-                        const PopupMenuDivider(
-                          height: 1,
-                        ),
-                        const PopupMenuItem(
-                          value: 'delete',
-                          child: Center(
-                            child: Text(
-                              '삭제',
-                              style: TextStyle(
-                                color: Color(0xFF262626),
-                                fontSize: 14,
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+
+                  return TodoTile( // 🆕 분리된 위젯 사용
+                    todo: todo,
+                    onToggle: () => _toggleTodo(index),
+                    onEdit: () => _editTodo(index),
+                    onDelete: () => _deleteTodo(index),
                   );
                 },
               ),
