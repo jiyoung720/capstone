@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../api/todo_api.dart';
 
 class ResetPasswordPage extends StatelessWidget {
   final emailController = TextEditingController();
@@ -79,8 +80,38 @@ class ResetPasswordPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              onPressed: () {
-                // TODO: 비밀번호 재설정 처리 로직
+              onPressed: () async {
+                // ✅ 비밀번호 재설정 처리 로직
+                final email = emailController.text.trim();
+                final newPassword = newPasswordController.text.trim();
+                final confirmPassword = confirmPasswordController.text.trim();
+
+                if (email.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('모든 항목을 입력해주세요.')),
+                  );
+                  return;
+                }
+
+                if (newPassword != confirmPassword) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('비밀번호가 일치하지 않습니다.')),
+                  );
+                  return;
+                }
+
+                bool success = await resetUserPassword(email, newPassword);
+
+                if (success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('비밀번호가 성공적으로 변경되었습니다.')),
+                  );
+                  Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false); // ✅ 로그인 화면으로 이동
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('비밀번호 변경에 실패했습니다.')),
+                  );
+                }
               },
               child: const Text(
                 '로그인 하기',
