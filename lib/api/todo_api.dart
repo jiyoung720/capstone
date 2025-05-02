@@ -6,6 +6,53 @@ import 'package:http/http.dart' as http;
 const String baseUrl = 'http://192.168.0.7:8080';
 // const String baseUrl = 'http://10.31.0.198:8080';
 
+// ✅ 회원가입 API
+Future<bool> registerUser(String name, String email, String password) async {
+  final url = Uri.parse('$baseUrl/main/signup');
+  final response = await http.post(
+    url,
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({
+      'name': name,
+      'email': email,
+      'password': password,
+    }),
+  );
+  return response.statusCode == 200;
+}
+
+// ✅ 로그인 API
+Future<String?> loginUser(String email, String password) async {
+  final url = Uri.parse('$baseUrl/main/login');
+  final response = await http.post(
+    url,
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({
+      'email': email,
+      'password': password,
+    }),
+  );
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    return data['token']; // JWT 토큰 반환
+  }
+  return null;
+}
+
+// ✅ 비밀번호 재설정 API
+Future<bool> resetUserPassword(String email, String newPassword) async {
+  final url = Uri.parse('$baseUrl/main/reset-password');
+  final response = await http.post(
+    url,
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({
+      'email': email,
+      'newPassword': newPassword,
+    }),
+  );
+  return response.statusCode == 200;
+}
+
 // ✅ 서버에 할 일 추가 요청 함수
 Future<bool> postTodo(String contents, String date) async {
   final url = Uri.parse('$baseUrl/todolist');

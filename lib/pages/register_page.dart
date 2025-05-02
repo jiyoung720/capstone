@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../api/todo_api.dart';
 
 class RegisterPage extends StatelessWidget {
   final nameController = TextEditingController();
@@ -84,9 +85,40 @@ class RegisterPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              onPressed: () {
-                // TODO: 회원가입 처리 로직
+              onPressed: () async {
+                final name = nameController.text.trim();
+                final email = emailController.text.trim();
+                final password = passwordController.text.trim();
+                final confirm = confirmPasswordController.text.trim();
+
+                if (name.isEmpty || email.isEmpty || password.isEmpty || confirm.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('모든 항목을 입력해주세요.')),
+                  );
+                  return;
+                }
+
+                if (password != confirm) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('비밀번호가 일치하지 않습니다.')),
+                  );
+                  return;
+                }
+
+                final success = await registerUser(name, email, password);
+
+                if (success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('회원가입이 완료되었습니다.')),
+                  );
+                  Navigator.pushReplacementNamed(context, '/login');
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('회원가입에 실패했습니다.')),
+                  );
+                }
               },
+
               child: const Text(
                 '회원 가입',
                 style: TextStyle(
@@ -135,7 +167,7 @@ class RegisterPage extends StatelessWidget {
         decoration: const InputDecoration(
           border: InputBorder.none,
         ),
-        style: TextStyle(fontSize: 15),
+        style: const TextStyle(fontSize: 15),
       ),
     );
   }
