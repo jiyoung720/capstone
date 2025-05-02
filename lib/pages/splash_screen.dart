@@ -15,7 +15,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
     // 2초 후 메인 페이지로 이동 (예시)
     Timer(const Duration(seconds: 2), () {
-      Navigator.pushReplacementNamed(context, '/todo');
+      Navigator.pushReplacementNamed(context, '/start');
     });
   }
 

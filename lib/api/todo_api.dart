@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 // 실제 기기에서는 'http://192.168.x.x:8080' 로 변경 필요
 const String baseUrl = 'http://192.168.0.7:8080';
+// const String baseUrl = 'http://10.31.0.198:8080';
 
 // ✅ 서버에 할 일 추가 요청 함수
 Future<bool> postTodo(String contents, String date) async {

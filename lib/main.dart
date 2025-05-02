@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'pages/splash_screen.dart';
 import 'pages/todo_list_page.dart';
+import 'pages/start_page.dart';
+import 'pages/login_page.dart';
+import 'pages/register_page.dart';
+import 'pages/reset_password_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -17,10 +21,14 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         scaffoldBackgroundColor: Colors.white,
       ),
-      initialRoute: '/',
+      initialRoute: '/', // 시작은 스플래시
       routes: {
         '/': (context) => const SplashScreen(),
-        '/todo': (context) => const TodoListPage(), // 다음에 메인 페이지로 바꿀거야
+        '/start': (context) => const StartPage(),
+        '/login': (context) => LoginPage(),
+        '/register': (context) => RegisterPage(),
+        '/reset': (context) => ResetPasswordPage(),
+        '/todo': (context) => const TodoListPage(),
       },
     );
   }
