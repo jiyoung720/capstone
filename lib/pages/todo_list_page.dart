@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/todo.dart';
 import '../api/todo_api.dart';
 import '../widgets/todo_tile.dart';
@@ -14,6 +15,7 @@ class TodoListPage extends StatefulWidget {
 class _TodoListPageState extends State<TodoListPage> {
   DateTime selectedDate = DateTime.now();
   final TextEditingController _controller = TextEditingController();
+  late String token;
 
   // ✅ 날짜별로 할 일을 저장하는 구조
   Map<String, List<Todo>> _todosByDate = {};
@@ -27,15 +29,20 @@ class _TodoListPageState extends State<TodoListPage> {
   @override
   void initState() {
     super.initState();
-    _loadTodosForSelectedDate(); // 앱 시작 시 오늘 날짜 데이터 불러오기
+    _initTokenAndLoadTodos();
+  }
+
+  void _initTokenAndLoadTodos() async {
+    final prefs = await SharedPreferences.getInstance();
+    token = prefs.getString('accessToken') ?? '';
+    _loadTodosForSelectedDate();
   }
 
   void _loadTodosForSelectedDate() async {
     final key = DateFormat('yyyy-MM-dd').format(selectedDate);
 
     try {
-      final todos = await fetchTodosByDate(key);
-
+      final todos = await fetchTodosByDate(key, token, context);
       // ✅ 정렬 추가
       todos.sort((a, b) {
         if (a.isDone == b.isDone) return 0;
@@ -56,13 +63,13 @@ class _TodoListPageState extends State<TodoListPage> {
     final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
 
     if (text.isNotEmpty) {
-      bool success = await postTodo(text, dateStr);
+      bool success = await postTodo(text, dateStr, token, context);
 
       if (success) {
         _controller.clear();
 
         try {
-          final todos = await fetchTodosByDate(dateStr);
+          final todos = await fetchTodosByDate(dateStr, token, context);
 
           // ✅ 정렬 추가!
           todos.sort((a, b) {
@@ -94,7 +101,7 @@ class _TodoListPageState extends State<TodoListPage> {
       return;
     }
 
-    final success = await updateCheckBox(todo.id!, !todo.isDone); // ✅ 서버 요청
+    final success = await updateCheckBox(todo.id!, !todo.isDone, token, context); // ✅ 서버 요청
 
     if (success) {
       setState(() {
@@ -124,7 +131,7 @@ class _TodoListPageState extends State<TodoListPage> {
     final key = DateFormat('yyyy-MM-dd').format(selectedDate);
 
     try {
-      final todos = await fetchTodosByDate(key);
+      final todos = await fetchTodosByDate(key, token, context);
 
       // ✅ 정렬 추가 (체크된 항목을 아래로)
       todos.sort((a, b) {
@@ -150,7 +157,7 @@ class _TodoListPageState extends State<TodoListPage> {
       return;
     }
 
-    final success = await deleteTodoById(todo.id!); // ✅ API 호출
+    final success = await deleteTodoById(todo.id!, token, context); // ✅ API 호출
 
     if (success) {
       setState(() {
@@ -188,7 +195,7 @@ class _TodoListPageState extends State<TodoListPage> {
                 final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
 
                 if (currentTodo.id != null && newText.isNotEmpty) {
-                  final success = await updateTodo(currentTodo.id!, newText, dateStr); // ✅ API 호출
+                  final success = await updateTodo(currentTodo.id!, newText, dateStr, token, context); // ✅ API 호출
 
                   if (success) {
                     setState(() {

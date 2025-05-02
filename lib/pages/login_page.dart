@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../api/todo_api.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -145,8 +146,8 @@ class _LoginPageState extends State<LoginPage> {
                     print('로그인 성공! JWT: $token');
 
                     // ✅ 필요 시 토큰 저장
-                    // SharedPreferences prefs = await SharedPreferences.getInstance();
-                    // await prefs.setString('accessToken', token);
+                    SharedPreferences prefs = await SharedPreferences.getInstance();
+                    await prefs.setString('accessToken', token);
 
                     // ✅ 할 일 페이지로 이동
                     Navigator.pushReplacementNamed(context, '/todo');

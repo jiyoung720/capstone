@@ -6,6 +6,7 @@ class Todo {
   Todo({this.id, required this.text, this.isDone = false});
 
   factory Todo.fromJson(Map<String, dynamic> json) {
+    print('📦 fromJson: $json');
     return Todo(
       id: json['id'],
       text: json['contents'], // 백엔드 필드명과 맞춰야 함

@@ -5,10 +5,17 @@ import 'pages/start_page.dart';
 import 'pages/login_page.dart';
 import 'pages/register_page.dart';
 import 'pages/reset_password_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.remove('accessToken'); // ✅ 앱 켜질 때마다 로그아웃
   runApp(const MyApp());
 }
+// void main() {
+//   runApp(const MyApp());
+// }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
