@@ -34,7 +34,7 @@ Future<String?> loginUser(String email, String password) async {
   );
   if (response.statusCode == 200) {
     final data = jsonDecode(response.body);
-    return data['token']; // JWT 토큰 반환
+    return data['accessToken']; // JWT 토큰 반환
   }
   return null;
 }

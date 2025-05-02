@@ -1,10 +1,23 @@
 import 'package:flutter/material.dart';
+import '../api/todo_api.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
-  LoginPage({super.key});
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -107,13 +120,41 @@ class LoginPage extends StatelessWidget {
               height: 45.45,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF333333),
+                  backgroundColor: const Color(0xFF333333),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                onPressed: () {
-                  // TODO: 로그인 로직
+                onPressed: () async {
+                  final email = emailController.text.trim();
+                  final password = passwordController.text.trim();
+
+                  print('입력된 email: [$email]');
+                  print('입력된 password: [$password]');
+
+                  if (email.isEmpty || password.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('이메일과 비밀번호를 모두 입력해주세요.')),
+                    );
+                    return;
+                  }
+
+                  final token = await loginUser(email, password);
+
+                  if (token != null) {
+                    print('로그인 성공! JWT: $token');
+
+                    // ✅ 필요 시 토큰 저장
+                    // SharedPreferences prefs = await SharedPreferences.getInstance();
+                    // await prefs.setString('accessToken', token);
+
+                    // ✅ 할 일 페이지로 이동
+                    Navigator.pushReplacementNamed(context, '/todo');
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('로그인에 실패했습니다.')),
+                    );
+                  }
                 },
                 child: const Text(
                   "로그인",
